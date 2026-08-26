@@ -104,6 +104,19 @@ input {
   transform-origin: top center;
 }
 
+.answer-sheet-image {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.answer-highlight {
+  position: absolute;
+  border-radius: 1rem;
+  border: 2px solid #3dd218;
+  background: rgba(94, 255, 53, 0.1);
+}
+
 .answer-sheet-page[data-zoom="75"] {
   transform: scale(0.75);
 }

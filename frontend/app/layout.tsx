@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Bricolage_Grotesque, Caveat, Inter } from "next/font/google";
+import { StoreProvider } from "@/components/providers/StoreProvider";
 import "./globals.css";
 
 const bricolage = Bricolage_Grotesque({
@@ -31,7 +32,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${bricolage.variable} ${inter.variable} ${caveat.variable} h-full antialiased`}
     >
-      <body className="min-h-full font-sans">{children}</body>
+      <body className="min-h-full font-sans">
+        <StoreProvider>{children}</StoreProvider>
+      </body>
     </html>
   );
 }

@@ -9,6 +9,7 @@ interface UploadScreenProps {
   questionPaper: UploadedFile | null;
   answerSheet: UploadedFile | null;
   errors: Partial<Record<UploadSlot, string>>;
+  submitError?: string;
   onFileChange: (
     slot: UploadSlot,
     file: UploadedFile | null,
@@ -21,6 +22,7 @@ export function UploadScreen({
   questionPaper,
   answerSheet,
   errors,
+  submitError,
   onFileChange,
   onStartMapping,
 }: UploadScreenProps) {
@@ -75,6 +77,9 @@ export function UploadScreen({
           Start Mapping
           <ArrowRightIcon className="h-5 w-5" />
         </button>
+        {submitError ? (
+          <p className="text-center text-sm text-primary">{submitError}</p>
+        ) : null}
         <p className="text-center text-sm leading-[22px] tracking-[-0.06em] text-[rgba(94,94,94,0.8)]">
           Once both files are uploaded, you&apos;ll be able to map answers with
           questions.

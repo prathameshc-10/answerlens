@@ -6,33 +6,47 @@ import { AnswerSheetViewer } from "@/components/exams/AnswerSheetViewer";
 import { MobileResultsTabs } from "@/components/exams/MobileResultsTabs";
 import { QuestionsPanel } from "@/components/exams/QuestionsPanel";
 import { PaneResizer } from "@/components/layout/PaneResizer";
-import { extractedQuestions } from "@/data/extractedQuestions";
-import type { ResultsMobileTab } from "@/types/exam";
+import { getAnswerSheetPageCount, mapSessionToExtractedQuestions } from "@/lib/mapResults";
+import { getSessionImageUrl } from "@/store/api/examApi";
+import type { ResultsMobileTab, SessionResults } from "@/types/exam";
 
-const DEFAULT_EXPANDED = "q2";
 const DEFAULT_PANE_WIDTH = 50;
 
-export function ResultsScreen() {
+interface ResultsScreenProps {
+  sessionId: string;
+  results: SessionResults;
+}
+
+export function ResultsScreen({ sessionId, results }: ResultsScreenProps) {
+  const questions = useMemo(
+    () => mapSessionToExtractedQuestions(results),
+    [results],
+  );
+  const pageCount = getAnswerSheetPageCount(results);
+  const firstQuestion = questions[0];
+
   const splitRef = useRef<HTMLDivElement>(null);
   const [mobileTab, setMobileTab] = useState<ResultsMobileTab>("questions");
-  const [expandedIds, setExpandedIds] = useState<string[]>([DEFAULT_EXPANDED]);
-  const [selectedId, setSelectedId] = useState(DEFAULT_EXPANDED);
-  const [page, setPage] = useState(1);
+  const [expandedIds, setExpandedIds] = useState<string[]>(
+    firstQuestion ? [firstQuestion.id] : [],
+  );
+  const [selectedId, setSelectedId] = useState(firstQuestion?.id ?? "");
+  const [page, setPage] = useState(firstQuestion?.bbox?.page ?? 1);
   const [zoom, setZoom] = useState(100);
   const [questionsPaneWidth, setQuestionsPaneWidth] = useState(DEFAULT_PANE_WIDTH);
 
   const selectedQuestion = useMemo(
-    () => extractedQuestions.find((question) => question.id === selectedId),
-    [selectedId],
+    () => questions.find((question) => question.id === selectedId),
+    [questions, selectedId],
   );
 
-  const allExpanded = expandedIds.length === extractedQuestions.length;
+  const allExpanded = questions.length > 0 && expandedIds.length === questions.length;
   const highlightLabel = selectedQuestion
     ? `Q${selectedQuestion.number}${selectedQuestion.part ? selectedQuestion.part.replace(".", "") : ""}`
     : "";
 
   function handleToggleQuestion(id: string) {
-    const question = extractedQuestions.find((item) => item.id === id);
+    const question = questions.find((item) => item.id === id);
     setSelectedId(id);
 
     if (question?.bbox) {
@@ -52,12 +66,12 @@ export function ResultsScreen() {
       return;
     }
 
-    setExpandedIds(extractedQuestions.map((question) => question.id));
+    setExpandedIds(questions.map((question) => question.id));
   }
 
   const questionsPanel = (
     <QuestionsPanel
-      questions={extractedQuestions}
+      questions={questions}
       expandedIds={expandedIds}
       selectedId={selectedId}
       allExpanded={allExpanded}
@@ -69,7 +83,9 @@ export function ResultsScreen() {
   const answerSheet = (
     <AnswerSheetViewer
       page={page}
+      pageCount={pageCount}
       zoom={zoom}
+      imageUrl={getSessionImageUrl(sessionId, "ans", page)}
       highlight={selectedQuestion?.bbox ?? null}
       highlightLabel={highlightLabel}
       showTitle

@@ -1,31 +1,68 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { skipToken } from "@reduxjs/toolkit/query";
+import { useMemo, useState } from "react";
 import { ExtractingScreen } from "@/components/exams/ExtractingScreen";
 import { ResultsScreen } from "@/components/exams/ResultsScreen";
 import { UploadScreen } from "@/components/exams/UploadScreen";
 import { AppShell } from "@/components/layout/AppShell";
+import { getApiErrorMessage } from "@/lib/apiError";
+import {
+  useCreateSessionMutation,
+  useGetProgressQuery,
+  useGetResultsQuery,
+  useStartProcessMutation,
+  useUploadAnswerSheetMutation,
+  useUploadQuestionPaperMutation,
+} from "@/store/api/examApi";
 import type { ExamView, UploadedFile, UploadSlot } from "@/types/exam";
 
 export function ExamsFlow() {
-  const [view, setView] = useState<ExamView>("upload");
+  const [runActive, setRunActive] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [questionPaper, setQuestionPaper] = useState<UploadedFile | null>(null);
   const [answerSheet, setAnswerSheet] = useState<UploadedFile | null>(null);
   const [errors, setErrors] = useState<Partial<Record<UploadSlot, string>>>({});
+  const [submitError, setSubmitError] = useState<string | undefined>();
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
-  useEffect(() => {
-    if (view !== "extracting") {
-      return;
+  const [createSession] = useCreateSessionMutation();
+  const [uploadQuestionPaper] = useUploadQuestionPaperMutation();
+  const [uploadAnswerSheet] = useUploadAnswerSheetMutation();
+  const [startProcess] = useStartProcessMutation();
+
+  const { currentData: progress } = useGetProgressQuery(
+    sessionId && isProcessing ? sessionId : skipToken,
+    {
+      pollingInterval: isProcessing ? 1500 : 0,
+    },
+  );
+
+  const pipelineDone = progress?.status === "done" && progress.stage === "done";
+  const pipelineError = progress?.status === "error";
+
+  const { currentData: results } = useGetResultsQuery(
+    sessionId && pipelineDone ? sessionId : skipToken,
+  );
+
+  const view: ExamView = useMemo(() => {
+    if (!runActive) {
+      return "upload";
     }
+    if (pipelineError) {
+      return "upload";
+    }
+    if (pipelineDone && results) {
+      return "results";
+    }
+    return "extracting";
+  }, [runActive, pipelineError, pipelineDone, results]);
 
-    const timeoutId = window.setTimeout(() => {
-      setView("results");
-    }, 2200);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [view]);
+  const mappingError = pipelineError
+    ? progress?.detail || "Extraction failed. Please try again."
+    : submitError;
 
   function handleFileChange(
     slot: UploadSlot,
@@ -38,33 +75,61 @@ export function ExamsFlow() {
       setAnswerSheet(file);
     }
 
+    setSubmitError(undefined);
     setErrors((current) => ({
       ...current,
       [slot]: error,
     }));
   }
 
-  function handleStartMapping() {
+  async function handleStartMapping() {
     if (!questionPaper || !answerSheet) {
       return;
     }
 
+    setSubmitError(undefined);
+    setIsProcessing(false);
     setSidebarCollapsed(true);
-    setView("extracting");
+    setRunActive(true);
+
+    try {
+      const session = await createSession().unwrap();
+      setSessionId(session.session_id);
+
+      await uploadQuestionPaper({
+        sessionId: session.session_id,
+        files: [questionPaper.file],
+      }).unwrap();
+
+      await uploadAnswerSheet({
+        sessionId: session.session_id,
+        files: [answerSheet.file],
+      }).unwrap();
+
+      await startProcess(session.session_id).unwrap();
+      setIsProcessing(true);
+    } catch (error) {
+      setIsProcessing(false);
+      setRunActive(false);
+      setSidebarCollapsed(false);
+      setSubmitError(getApiErrorMessage(error));
+    }
   }
 
   function handleBack() {
     if (view === "extracting" || view === "results") {
-      setView("upload");
+      setIsProcessing(false);
+      setRunActive(false);
       setSidebarCollapsed(false);
     }
   }
 
   const extractingChrome = view === "extracting";
+  const collapsed = view === "upload" ? false : sidebarCollapsed;
 
   return (
     <AppShell
-      collapsed={sidebarCollapsed}
+      collapsed={collapsed}
       onCollapsedChange={setSidebarCollapsed}
       mobileNavOpen={mobileNavOpen}
       onMobileNavOpenChange={setMobileNavOpen}
@@ -82,12 +147,19 @@ export function ExamsFlow() {
           questionPaper={questionPaper}
           answerSheet={answerSheet}
           errors={errors}
+          submitError={mappingError}
           onFileChange={handleFileChange}
-          onStartMapping={handleStartMapping}
+          onStartMapping={() => {
+            void handleStartMapping();
+          }}
         />
       ) : null}
-      {view === "extracting" ? <ExtractingScreen /> : null}
-      {view === "results" ? <ResultsScreen /> : null}
+      {view === "extracting" ? (
+        <ExtractingScreen percent={progress?.percent} stage={progress?.stage} />
+      ) : null}
+      {view === "results" && sessionId && results ? (
+        <ResultsScreen sessionId={sessionId} results={results} />
+      ) : null}
     </AppShell>
   );
 }

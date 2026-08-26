@@ -14,9 +14,17 @@ export interface ExamUploadFormConfig {
 }
 
 export const examUploadFormConfig: ExamUploadFormConfig = {
-  maxSizeMB: 10,
-  acceptedTypes: ["application/pdf"],
-  acceptedExtensions: [".pdf"],
+  maxSizeMB: 20,
+  acceptedTypes: [
+    "application/pdf",
+    "image/png",
+    "image/jpeg",
+    "image/jpg",
+    "image/webp",
+    "image/tiff",
+    "image/bmp",
+  ],
+  acceptedExtensions: [".pdf", ".png", ".jpg", ".jpeg", ".webp", ".tiff", ".bmp"],
   slots: {
     questionPaper: {
       label: "Upload",
@@ -36,7 +44,7 @@ export function validateExamFile(file: File): string | null {
     acceptedTypes.includes(file.type) || acceptedExtensions.includes(extension);
 
   if (!isAcceptedType) {
-    return "Please upload a PDF file.";
+    return "Please upload a PDF or image file.";
   }
 
   if (file.size > maxSizeMB * 1024 * 1024) {

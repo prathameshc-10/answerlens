@@ -139,7 +139,7 @@ export function getScoreTone(awarded: number, max: number): ScoreTone {
     return "fail";
   }
 
-  if (awarded / max >= 0.8) {
+  if (max <= 0 || awarded / max >= 0.8) {
     return "success";
   }
 

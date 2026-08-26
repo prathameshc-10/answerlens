@@ -7,12 +7,13 @@ import {
   MinusIcon,
   PlusIcon,
 } from "@/components/icons/AppIcons";
-import { ANSWER_SHEET_PAGE_COUNT } from "@/data/extractedQuestions";
 import type { BoundingBox } from "@/types/exam";
 
 interface AnswerSheetViewerProps {
   page: number;
+  pageCount: number;
   zoom: number;
+  imageUrl: string;
   highlight: BoundingBox | null;
   highlightLabel: string;
   showTitle?: boolean;
@@ -26,7 +27,9 @@ const MAX_ZOOM = 150;
 
 export function AnswerSheetViewer({
   page,
+  pageCount,
   zoom,
+  imageUrl,
   highlight,
   highlightLabel,
   showTitle = true,
@@ -80,13 +83,13 @@ export function AnswerSheetViewer({
               <ArrowLeftIcon className="h-4 w-4" />
             </button>
             <span className="text-sm font-bold leading-[140%] text-white">
-              Page {page} of {ANSWER_SHEET_PAGE_COUNT}
+              Page {page} of {pageCount}
             </span>
             <button
               type="button"
               aria-label="Next page"
               className="text-white disabled:text-muted"
-              disabled={page >= ANSWER_SHEET_PAGE_COUNT}
+              disabled={page >= pageCount}
               onClick={() => onPageChange(page + 1)}
             >
               <ArrowRightIcon className="h-4 w-4" />
@@ -99,6 +102,7 @@ export function AnswerSheetViewer({
         <div className="answer-sheet-page" data-zoom={String(zoom)}>
           <AnswerSheetPage
             page={page}
+            imageUrl={imageUrl}
             highlight={highlight}
             highlightLabel={highlightLabel}
           />

@@ -1,4 +1,20 @@
-export function ExtractingScreen() {
+const STAGE_LABELS: Record<string, string> = {
+  queued: "Preparing your papers",
+  extract_questions: "Extracting questions",
+  extract_answers: "Extracting answers",
+  map_answers: "Mapping answers to questions",
+  grading: "Grading answers",
+  done: "Finishing up",
+};
+
+interface ExtractingScreenProps {
+  percent?: number;
+  stage?: string;
+}
+
+export function ExtractingScreen({ percent, stage }: ExtractingScreenProps) {
+  const stageLabel = stage ? STAGE_LABELS[stage] : undefined;
+
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6">
       <div className="sparkle-float relative mb-2 h-[92px] w-[140px]">
@@ -44,8 +60,11 @@ export function ExtractingScreen() {
         Extracting...
       </h1>
       <p className="text-base tracking-[-0.04em] text-nav-muted lg:text-xl">
-        This may take a while
+        {stageLabel ?? "This may take a while"}
       </p>
+      {typeof percent === "number" ? (
+        <p className="text-sm tracking-[-0.04em] text-nav-muted">{percent}%</p>
+      ) : null}
     </div>
   );
 }
