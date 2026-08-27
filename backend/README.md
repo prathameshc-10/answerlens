@@ -44,7 +44,7 @@ OpenAPI docs: http://localhost:8000/docs
 | --- | --- | --- |
 | `LLM_PROVIDER` | `gemini` | `gemini` or `groq` |
 | `GEMINI_API_KEY` | empty | Google AI Studio key |
-| `GEMINI_MODEL` | `gemini-2.5-flash` | Gemini vision model |
+| `GEMINI_MODEL` | `gemini-3.6-flash` | Gemini vision model |
 | `GROQ_API_KEY` | empty | Groq Cloud key |
 | `GROQ_MODEL` | `qwen/qwen3.6-27b` | Groq **vision** model |
 | `GROQ_TEXT_MODEL` | `openai/gpt-oss-20b` | Groq text model (mapping, grading, OCR fallback) |
